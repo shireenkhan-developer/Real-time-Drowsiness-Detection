@@ -40,10 +40,18 @@ export async function extractEyeRegion(
   // Get the first face
   const face = predictions[0];
 
+  // Check if landmarks are available
+  if (!face.landmarks || (Array.isArray(face.landmarks) && face.landmarks.length < 2)) {
+    console.warn("Face detected but landmarks missing, using center crop");
+    const tensor = cropCenterEyeRegion(videoElement);
+    return { tensor, detected: false };
+  }
+
   // BlazeFace provides these landmarks:
   // [right_eye, left_eye, nose, mouth, right_ear, left_ear]
-  const rightEye = face.landmarks[0] as [number, number];
-  const leftEye = face.landmarks[1] as [number, number];
+  const landmarks = Array.isArray(face.landmarks) ? face.landmarks : [];
+  const rightEye = landmarks[0] as [number, number];
+  const leftEye = landmarks[1] as [number, number];
 
   // Calculate eye region bounding box
   const eyeRegion = calculateEyeRegion(rightEye, leftEye, videoElement);
@@ -104,7 +112,7 @@ async function cropAndPreprocessEye(
 
     // 3️⃣ Crop and resize to 24x24
     const cropped = tf.image.cropAndResize(
-      fullFrame.expandDims(0),
+      fullFrame.expandDims(0) as tf.Tensor4D,
       [[y1, x1, y2, x2]],
       [0],
       [24, 24]
@@ -141,7 +149,7 @@ function cropCenterEyeRegion(videoElement: HTMLVideoElement): tf.Tensor4D {
 
     // 3️⃣ Crop and resize to 24x24
     const cropped = tf.image.cropAndResize(
-      img.expandDims(0),
+      img.expandDims(0) as tf.Tensor4D,
       [[y1, x1, y2, x2]],
       [0],
       [24, 24]

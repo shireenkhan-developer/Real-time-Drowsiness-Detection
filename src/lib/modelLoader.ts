@@ -38,27 +38,27 @@ export async function loadModel(): Promise<tf.LayersModel> {
 export function preprocessFrame(videoElement: HTMLVideoElement): tf.Tensor4D {
   return tf.tidy(() => {
     // 1️⃣ Capture image from webcam video element
-    let img = tf.browser.fromPixels(videoElement);  // shape (height, width, 3)
+    const captured = tf.browser.fromPixels(videoElement);  // shape (height, width, 3)
     
     // 2️⃣ Convert to grayscale (average over color channels)
-    img = img.mean(2) as tf.Tensor2D; // shape (height, width)
+    const grayscale = captured.mean(2) as tf.Tensor2D; // shape (height, width)
     
     // 3️⃣ Add channel dimension
-    img = img.expandDims(-1) as tf.Tensor3D; // shape (height, width, 1)
+    const withChannel = grayscale.expandDims(-1) as tf.Tensor3D; // shape (height, width, 1)
     
     // 4️⃣ Resize to 24x24 (same as training)
-    img = tf.image.resizeBilinear(img, [24, 24]) as tf.Tensor3D; // shape (24, 24, 1)
+    const resized = tf.image.resizeBilinear(withChannel, [24, 24]) as tf.Tensor3D; // shape (24, 24, 1)
     
     // 5️⃣ Normalize to 0–1
-    img = img.div(255.0) as tf.Tensor3D;
+    const normalized = resized.div(255.0) as tf.Tensor3D;
     
     // 6️⃣ Add batch dimension for prediction
-    const batched = img.expandDims(0) as tf.Tensor4D; // shape (1, 24, 24, 1)
+    const batched = normalized.expandDims(0) as tf.Tensor4D; // shape (1, 24, 24, 1)
     
     // Debug: Log shape (only first time to avoid spam)
-    if (typeof window !== 'undefined' && !(window as any).__shapeLogged) {
+    if (typeof window !== 'undefined' && !(window as typeof window & { __shapeLogged?: boolean }).__shapeLogged) {
       console.log('✅ Preprocessed tensor shape:', batched.shape);
-      (window as any).__shapeLogged = true;
+      (window as typeof window & { __shapeLogged?: boolean }).__shapeLogged = true;
     }
     
     return batched;

@@ -5,7 +5,6 @@
 
 let audioContext: AudioContext | null = null;
 let oscillator: OscillatorNode | null = null;
-let gainNode: GainNode | null = null;
 let isPlaying = false;
 let beepInterval: NodeJS.Timeout | null = null;
 
@@ -14,7 +13,8 @@ let beepInterval: NodeJS.Timeout | null = null;
  */
 export function initAudio() {
   if (!audioContext) {
-    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    audioContext = new AudioContextClass();
   }
 }
 
@@ -87,7 +87,7 @@ export function stopAlarm() {
   if (oscillator) {
     try {
       oscillator.stop();
-    } catch (e) {
+    } catch {
       // Ignore if already stopped
     }
     oscillator = null;
